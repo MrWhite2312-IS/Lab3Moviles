@@ -132,6 +132,7 @@ export function LightBeats() {
 
           <View style={[styles.visualizer, (orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT) && styles.visualizerLandscape]}>
             {Array.from({ length: 10 }).map((_, i) => {
+              // Irregular bar heights using index modulo to vary amplitude scaling, AI-assisted (Anthropic, 2025)
               const barHeight = Math.max(
                 10,
                 Math.min(100, amplitude * 150 * (0.7 + (i % 3) * 0.15))
