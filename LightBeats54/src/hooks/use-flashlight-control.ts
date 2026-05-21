@@ -54,10 +54,19 @@ export function useFlashlightControl() {
     };
   }, []);
 
+  const turnOffFlashlight = () => {
+    if (turnOffTimeoutRef.current) {
+      clearTimeout(turnOffTimeoutRef.current);
+      turnOffTimeoutRef.current = null;
+    }
+    setIsFlashlightOn(false);
+  };
+
   return {
     isFlashlightOn,
     permission,
     requestCameraPermission,
     updateFlashlightByAmplitude,
+    turnOffFlashlight,
   };
 }

@@ -34,6 +34,7 @@ export function useAudioAnalyzer() {
         if (!recordingRef.current) return;
         const status = await recordingRef.current.getStatusAsync();
         if (status.isRecording && status.metering !== undefined) {
+          // dBFS → [0.0, 1.0] normalization formula, AI-assisted (Anthropic, 2025)
           const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
           setAmplitude(normalized);
         }

@@ -11,6 +11,7 @@ import { CameraView } from 'expo-camera';
 import Slider from '@react-native-community/slider';
 import { useAudioAnalyzer } from '@/hooks/use-audio-analyzer';
 import { useFlashlightControl } from '@/hooks/use-flashlight-control';
+import { useAccelerometer } from '@/hooks/use-accelerometer';
 import { useScreenOrientation } from '@/hooks/useScreenOrientation';
 import * as ScreenOrientation from 'expo-screen-orientation';
 
@@ -20,11 +21,13 @@ export function LightBeats() {
   const orientation = useScreenOrientation();
   const { amplitude, isListening, error, startListening, stopListening } =
     useAudioAnalyzer();
-  const { isFlashlightOn, requestCameraPermission, updateFlashlightByAmplitude } =
+  const { data: accelData } = useAccelerometer();
+  const { isFlashlightOn, requestCameraPermission, updateFlashlightByAmplitude, turnOffFlashlight } =
     useFlashlightControl();
 
   const [isStarted, setIsStarted] = useState(false);
   const [cameraHasPermission, setCameraHasPermission] = useState(false);
+  const [faceDownStopped, setFaceDownStopped] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const opacityAnim = React.useRef(new Animated.Value(0.5)).current;
   const [beatPercent, setBeatPercent] = useState(70);
@@ -41,7 +44,20 @@ export function LightBeats() {
     initPermissions();
   }, [requestCameraPermission]);
 
-  
+  // Z normalizado: ~+1 boca arriba, ~-1 boca abajo (independiente de Android/iOS)
+  useEffect(() => {
+    const gravity = Platform.OS === 'ios' ? 1 : 9.8;
+    const normalizedZ = accelData.z / gravity;
+    if (normalizedZ < -0.75 && isStarted) {
+      stopListening();
+      turnOffFlashlight();
+      setIsStarted(false);
+      setFaceDownStopped(true);
+    } else if (normalizedZ >= -0.75) {
+      setFaceDownStopped(false);
+    }
+  }, [accelData.z, isStarted, stopListening, turnOffFlashlight]);
+
   useEffect(() => {
     if (isListening) {
       updateFlashlightByAmplitude({
@@ -206,6 +222,12 @@ export function LightBeats() {
         {!cameraHasPermission && Platform.OS !== 'web' && (
           <Text style={styles.warningText}>
              Se requiere permiso de cámara para usar la linterna
+          </Text>
+        )}
+
+        {faceDownStopped && (
+          <Text style={styles.warningText}>
+            Teléfono boca abajo — linterna apagada
           </Text>
         )}
         </View>
