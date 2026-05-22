@@ -1,56 +1,83 @@
-# Welcome to your Expo app 👋
+# LightBeats
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Mobile application built with React Native (Expo SDK 54) for Laboratory 3 of the CI-0161 — Mobile Application Development course, Universidad de Costa Rica.
 
-## Get started
+The app synchronizes the device flashlight with music beats captured by the microphone in real time, and integrates the accelerometer to detect when the phone is placed face down.
 
-1. Install dependencies
+## Team
 
-   ```bash
-   npm install
-   ```
+- Álvaro Moya Arrieta — C15331
+- Sebastián Blanco Quesada — C11085
 
-2. Start the app
+## Integrated Sensors
 
-   ```bash
-   npx expo start
-   ```
+| Sensor | Package | Description |
+|---|---|---|
+| Microphone | expo-av | Captures real-time audio and measures amplitude (dBFS) |
+| Flashlight / Camera | expo-camera | Controls the LED flash synchronized with beats |
+| Accelerometer | expo-sensors | Detects face-down position to turn off the flashlight |
 
-In the output, you'll find options to open the app in a
+## Prerequisites
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 18+
+- npm
+- Expo Go installed on the device ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) / [iOS](https://apps.apple.com/app/expo-go/id982107779))
+- Or Android Studio / Xcode for emulator use
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Installation and Setup
 
-## Get a fresh project
-
-When you're ready, run:
+1. Clone the repository
 
 ```bash
-npm run reset-project
+git clone https://github.com/MrWhite2312-IS/Lab3Moviles.git
+cd Lab3Moviles/LightBeats54
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Install dependencies
 
-### Other setup steps
+```bash
+npm install
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+3. Start the development server
 
-## Learn more
+```bash
+npx expo start
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+4. Scan the QR code with Expo Go or press `a` for Android / `i` for iOS
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Required Permissions
 
-## Join the community
+| Permission | Platform | Usage |
+|---|---|---|
+| RECORD_AUDIO | Android / iOS | Microphone audio capture |
+| CAMERA | Android / iOS | Flashlight control |
 
-Join our community of developers creating universal apps.
+Permissions are requested at runtime on first use.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Project Structure
+
+```
+src/
+├── app/
+│   └── index.tsx                 # Main screen with tab navigation
+├── components/
+│   ├── light-beats.tsx           # LightBeats screen (microphone + flashlight)
+│   └── accelerometer-display.tsx # Accelerometer screen
+└── hooks/
+    ├── use-audio-analyzer.ts     # Microphone hook
+    ├── use-flashlight-control.ts # Flashlight hook
+    ├── use-accelerometer.ts      # Accelerometer hook
+    └── useScreenOrientation.ts   # Screen orientation hook
+```
+
+## Features
+
+- Real-time beat detection through audio amplitude analysis
+- Flashlight synchronized with beats with configurable debounce
+- Adjustable sensitivity threshold via slider (0–100%)
+- Amplitude visualizer with 10 animated bars
+- Automatic face-down detection — turns off the flashlight
+- Responsive layout for portrait and landscape modes
+- Dedicated accelerometer tab with tilt ball indicator

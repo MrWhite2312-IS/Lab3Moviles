@@ -44,7 +44,7 @@ export function LightBeats() {
     initPermissions();
   }, [requestCameraPermission]);
 
-  // Z normalizado: ~+1 boca arriba, ~-1 boca abajo (independiente de Android/iOS)
+  // Normalized Z: ~+1 face up, ~-1 face down (consistent across Android/iOS)
   useEffect(() => {
     const gravity = Platform.OS === 'ios' ? 1 : 9.8;
     const normalizedZ = accelData.z / gravity;
@@ -66,6 +66,7 @@ export function LightBeats() {
       });
     }
   }, [amplitude, isListening, updateFlashlightByAmplitude, BEAT_THRESHOLD]);
+  
   useEffect(() => {
     
     if (isFlashlightOn) {
