@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Audio } from 'expo-av';
 
+// dBFS → [0.0, 1.0] normalization formula, AI-assisted (Anthropic, 2025)
+function normalizeDbfs(metering: number): number {
+  return Math.max(0, Math.min(1, (metering + 60) / 60));
+}
+
 export function useAudioAnalyzer() {
   const [amplitude, setAmplitude] = useState(0);
   const [isListening, setIsListening] = useState(false);
@@ -10,12 +15,6 @@ export function useAudioAnalyzer() {
 
   const startListening = useCallback(async () => {
     try {
-      const { granted } = await Audio.requestPermissionsAsync();
-      if (!granted) {
-        setError('Se requiere permiso de micrófono');
-        return;
-      }
-
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
@@ -34,9 +33,7 @@ export function useAudioAnalyzer() {
         if (!recordingRef.current) return;
         const status = await recordingRef.current.getStatusAsync();
         if (status.isRecording && status.metering !== undefined) {
-          // dBFS → [0.0, 1.0] normalization formula, AI-assisted (Anthropic, 2025)
-          const normalized = Math.max(0, Math.min(1, (status.metering + 60) / 60));
-          setAmplitude(normalized);
+          setAmplitude(normalizeDbfs(status.metering));
         }
       }, 50);
 

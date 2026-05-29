@@ -13,6 +13,19 @@ function clamp(v: number, min: number, max: number) {
   return Math.max(min, Math.min(max, v));
 }
 
+// Tilt ball visual design and X/Y axis to screen coordinates mapping, AI-assisted (Anthropic, 2025)
+function calcTiltBallX(x: number): number {
+  return clamp(-x / GRAVITY, -1, 1) * BALL_RANGE;
+}
+
+function calcTiltBallY(y: number): number {
+  return clamp(y / GRAVITY, -1, 1) * BALL_RANGE;
+}
+
+function calcMagnitude(x: number, y: number, z: number): number {
+  return Math.sqrt(x ** 2 + y ** 2 + z ** 2);
+}
+
 export function AccelerometerDisplay() {
   const { data, isAvailable } = useAccelerometer();
   const orientation = useScreenOrientation();
@@ -30,11 +43,9 @@ export function AccelerometerDisplay() {
     );
   }
 
-  // Tilt ball visual design and X/Y axis to screen coordinates mapping, AI-assisted (Anthropic, 2025)
-  const ballX = clamp(-data.x / GRAVITY, -1, 1) * BALL_RANGE;
-  const ballY = clamp(data.y / GRAVITY, -1, 1) * BALL_RANGE;
-
-  const magnitude = Math.sqrt(data.x ** 2 + data.y ** 2 + data.z ** 2);
+  const ballX = calcTiltBallX(data.x);
+  const ballY = calcTiltBallY(data.y);
+  const magnitude = calcMagnitude(data.x, data.y, data.z);
 
   return (
     <View style={styles.container}>

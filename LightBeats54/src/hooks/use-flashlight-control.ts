@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useCameraPermissions } from 'expo-camera';
 
 interface FlashlightControlOptions {
   amplitude: number;
@@ -8,18 +7,12 @@ interface FlashlightControlOptions {
 
 export function useFlashlightControl() {
   const [isFlashlightOn, setIsFlashlightOn] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
   const lastBeatTimeRef = useRef(0);
   const turnOffTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const minBeatIntervalMs = 50;
   const turnOffDelayMs = 200;
 
-  const requestCameraPermission = async (): Promise<boolean> => {
-    const response = await requestPermission();
-    return response.granted;
-  };
 
-  
 
   const updateFlashlightByAmplitude = (options: FlashlightControlOptions) => {
     const { amplitude, beatThreshold } = options;
@@ -64,8 +57,6 @@ export function useFlashlightControl() {
 
   return {
     isFlashlightOn,
-    permission,
-    requestCameraPermission,
     updateFlashlightByAmplitude,
     turnOffFlashlight,
   };

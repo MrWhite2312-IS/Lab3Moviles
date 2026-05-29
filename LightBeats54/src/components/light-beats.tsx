@@ -9,51 +9,59 @@ import {
 import { styles } from './light-beats.styles';
 import { CameraView } from 'expo-camera';
 import Slider from '@react-native-community/slider';
+import { requestCameraPermission, requestMicPermission } from '@/utils/permissions';
 import { useAudioAnalyzer } from '@/hooks/use-audio-analyzer';
 import { useFlashlightControl } from '@/hooks/use-flashlight-control';
 import { useAccelerometer } from '@/hooks/use-accelerometer';
 import { useScreenOrientation } from '@/hooks/useScreenOrientation';
 import * as ScreenOrientation from 'expo-screen-orientation';
 
+const GRAVITY = Platform.OS === 'ios' ? 1 : 9.8;
 
+function toBeatThreshold(percent: number): number {
+  return percent / 100;
+}
+
+function normalizeZ(z: number): number {
+  return z / GRAVITY;
+}
+
+// Irregular bar heights using index modulo to vary amplitude scaling, AI-assisted (Anthropic, 2025)
+function calcBarHeight(amplitude: number, barIndex: number): number {
+  return Math.max(10, Math.min(100, amplitude * 150 * (0.7 + (barIndex % 3) * 0.15)));
+}
 
 export function LightBeats() {
   const orientation = useScreenOrientation();
   const { amplitude, isListening, error, startListening, stopListening } =
     useAudioAnalyzer();
   const { data: accelData } = useAccelerometer();
-  const { isFlashlightOn, requestCameraPermission, updateFlashlightByAmplitude, turnOffFlashlight } =
+  const { isFlashlightOn, updateFlashlightByAmplitude, turnOffFlashlight } =
     useFlashlightControl();
 
   const [isStarted, setIsStarted] = useState(false);
   const [cameraHasPermission, setCameraHasPermission] = useState(false);
+  const [micHasPermission, setMicHasPermission] = useState(false);
   const [faceDownStopped, setFaceDownStopped] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(1)).current;
   const opacityAnim = React.useRef(new Animated.Value(0.5)).current;
   const [beatPercent, setBeatPercent] = useState(70);
-  const BEAT_THRESHOLD = beatPercent / 100;
 
-  
   useEffect(() => {
-    const initPermissions = async () => {
-      if (Platform.OS !== 'web') {
-        const hasPermission = await requestCameraPermission();
-        setCameraHasPermission(hasPermission);
-      }
-    };
-    initPermissions();
-  }, [requestCameraPermission]);
+    if (Platform.OS !== 'web') {
+      requestCameraPermission().then(setCameraHasPermission);
+      requestMicPermission().then(setMicHasPermission);
+    }
+  }, []);
 
   // Normalized Z: ~+1 face up, ~-1 face down (consistent across Android/iOS)
   useEffect(() => {
-    const gravity = Platform.OS === 'ios' ? 1 : 9.8;
-    const normalizedZ = accelData.z / gravity;
-    if (normalizedZ < -0.75 && isStarted) {
+    if (normalizeZ(accelData.z) < -0.75 && isStarted) {
       stopListening();
       turnOffFlashlight();
       setIsStarted(false);
       setFaceDownStopped(true);
-    } else if (normalizedZ >= -0.75) {
+    } else if (normalizeZ(accelData.z) >= -0.75) {
       setFaceDownStopped(false);
     }
   }, [accelData.z, isStarted, stopListening, turnOffFlashlight]);
@@ -62,13 +70,12 @@ export function LightBeats() {
     if (isListening) {
       updateFlashlightByAmplitude({
         amplitude,
-        beatThreshold: BEAT_THRESHOLD,
+        beatThreshold: toBeatThreshold(beatPercent),
       });
     }
-  }, [amplitude, isListening, updateFlashlightByAmplitude, BEAT_THRESHOLD]);
-  
+  }, [amplitude, isListening, updateFlashlightByAmplitude, beatPercent]);
+
   useEffect(() => {
-    
     if (isFlashlightOn) {
       Animated.parallel([
         Animated.spring(scaleAnim, {
@@ -98,15 +105,16 @@ export function LightBeats() {
 
   const handleToggle = useCallback(async () => {
     if (!isStarted) {
+      if (!micHasPermission && Platform.OS !== 'web') return;
       await startListening();
       setIsStarted(true);
     } else {
       await stopListening();
       setIsStarted(false);
     }
-  }, [isStarted, startListening, stopListening]);
+  }, [isStarted, micHasPermission, startListening, stopListening]);
 
-  
+
 
   return (
     <View style={styles.container}>
@@ -129,28 +137,21 @@ export function LightBeats() {
             LightBeats
           </Text>
         <View style={[styles.amplitudeContainer, (orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT) && styles.amplitudeContainerLandscape]}>
-          
+
 
           <View style={[styles.visualizer, (orientation === ScreenOrientation.Orientation.LANDSCAPE_LEFT || orientation === ScreenOrientation.Orientation.LANDSCAPE_RIGHT) && styles.visualizerLandscape]}>
-            {Array.from({ length: 10 }).map((_, i) => {
-              // Irregular bar heights using index modulo to vary amplitude scaling, AI-assisted (Anthropic, 2025)
-              const barHeight = Math.max(
-                10,
-                Math.min(100, amplitude * 150 * (0.7 + (i % 3) * 0.15))
-              );
-              return (
-                <View
-                  key={i}
-                  style={[
-                    styles.bar,
-                    {
-                      height: `${barHeight}%`,
-                      backgroundColor: isFlashlightOn ? '#FFD700' : '#888',
-                    },
-                  ]}
-                />
-              );
-            })}
+            {Array.from({ length: 10 }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.bar,
+                  {
+                    height: `${calcBarHeight(amplitude, i)}%`,
+                    backgroundColor: isFlashlightOn ? '#FFD700' : '#888',
+                  },
+                ]}
+              />
+            ))}
           </View>
 
           <Animated.View
@@ -224,6 +225,12 @@ export function LightBeats() {
         {!cameraHasPermission && Platform.OS !== 'web' && (
           <Text style={styles.warningText}>
              Se requiere permiso de cámara para usar la linterna
+          </Text>
+        )}
+
+        {!micHasPermission && Platform.OS !== 'web' && (
+          <Text style={styles.warningText}>
+            Se requiere permiso de micrófono
           </Text>
         )}
 
